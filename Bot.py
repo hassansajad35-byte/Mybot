@@ -13,11 +13,13 @@ ADMIN_ID = 1750728796
 BASE_URL = f"https://api.telegram.org/bot{TOKEN}/"
 
 
-def send_message(chat_id, text):
+def send_message(chat_id, text, reply_markup=None):
   url = BASE_URL + "sendMessage"
-  payload = urllib.parse.urlencode(
-      {"chat_id": chat_id, "text": text, "parse_mode": "Markdown"}
-  ).encode("utf-8")
+  data = {"chat_id": chat_id, "text": text, "parse_mode": "Markdown"}
+  if reply_markup:
+    data["reply_markup"] = json.dumps(reply_markup)
+
+  payload = urllib.parse.urlencode(data).encode("utf-8")
   try:
     req = urllib.request.Request(url, data=payload)
     urllib.request.urlopen(req)
@@ -444,17 +446,27 @@ while True:
               send_video(chat_id, item["id"])
             elif item["type"] == "photo":
               send_photo(chat_id, item["id"])
-            time.sleep(0.6)  # فاصل زمني حتى ما يصير ضغط وتوصل كلها مرتبة
+            time.sleep(0.6)
 
-          # 3. إشعار للأدمن
+          # 3. إشعار للأدمن مع زر تفاعلي (Inline Button) يفتح البروفايل مباشرة لأي شخص
           profile_link = f"tg://user?id={user_id}"
           admin_msg = (
               f"🚨 **مشترك جديد دخل البوت!**\n\n"
               f"👤 **الاسم:** {first_name}\n"
               f"🆔 **الـ ID:** `{user_id}`\n"
-              f"🔗 **اليوزر:** {username}\n\n"
-              f"👉 [اضغط هنا للدخول لبروفايل الشخص مباشرة]({profile_link})"
+              f"🔗 **اليوزر:** {username}"
           )
-          send_message(ADMIN_ID, admin_msg)
+
+          # إنشاء الزر الشفاف
+          keyboard = {
+              "inline_keyboard": [[
+                  {
+                      "text": "👉 اضغط هنا للدخول لبروفايل الشخص مباشرة",
+                      "url": profile_link,
+                  }
+              ]]
+          }
+
+          send_message(ADMIN_ID, admin_msg, reply_markup=keyboard)
 
   time.sleep(1)
